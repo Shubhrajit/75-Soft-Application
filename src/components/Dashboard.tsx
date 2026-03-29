@@ -1,4 +1,4 @@
-import { useStore } from '../StoreContext';
+import { useStore } from '../context/StoreContext';
 import { motion } from 'motion/react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StoreProvider, useStore } from './StoreContext';
+import { StoreProvider, useStore } from './context/StoreContext';
 import Home from './components/Home';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';

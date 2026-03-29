@@ -1,5 +1,5 @@
 import React, { createContext, useContext, ReactNode } from 'react';
-import { useAppStore as useLocalStore } from './store';
+import { useAppStore as useLocalStore } from '../store/useAppStore';
 
 type StoreContextType = ReturnType<typeof useLocalStore>;
 

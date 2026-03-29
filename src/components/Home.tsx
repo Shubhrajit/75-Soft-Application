@@ -1,13 +1,24 @@
-import React from 'react';
-import { useStore } from '../StoreContext';
+import React, { useState, useEffect } from 'react';
+import { useStore } from '../context/StoreContext';
 import { cn } from '../lib/utils';
-import { Check, Droplets, Camera, BookOpen, Briefcase, UtensilsCrossed, WineOff, Activity } from 'lucide-react';
-import { motion } from 'motion/react';
-import { ActivityType } from '../store';
+import { Check, Droplets, Camera, BookOpen, Briefcase, UtensilsCrossed, WineOff, Activity, AlertTriangle } from 'lucide-react';
+import { motion, AnimatePresence } from 'motion/react';
+import { ActivityType } from '../types';
 
 export default function Home() {
-  const { state, currentDayNumber, updateTask, getConsecutiveWorkouts } = useStore();
+  const { state, currentDayNumber, updateTask, getConsecutiveWorkouts, endDay } = useStore();
+  const [showRecoveryWarning, setShowRecoveryWarning] = useState(false);
+  const [showEndDayModal, setShowEndDayModal] = useState(false);
+  const [countdown, setCountdown] = useState(3);
   const todayRecord = state.records[currentDayNumber];
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (showEndDayModal && countdown > 0) {
+      timer = setTimeout(() => setCountdown(c => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [showEndDayModal, countdown]);
 
   if (!todayRecord) return null;
 
@@ -26,23 +37,44 @@ export default function Home() {
   };
 
   const handleActivity = (type: ActivityType) => {
+    if (type === 'Active Recovery' && !canActiveRecovery) {
+      setShowRecoveryWarning(true);
+      return;
+    }
     if (tasks.activity.type === type && tasks.activity.completed) {
       updateTask(currentDayNumber, 'activity', { type: null, completed: false });
     } else {
-      updateTask(currentDayNumber, 'activity', { type, completed: true });
+      updateTask(currentDayNumber, 'activity', { type: type, completed: true });
     }
+  };
+
+  const confirmActiveRecovery = () => {
+    setShowRecoveryWarning(false);
+    updateTask(currentDayNumber, 'activity', { type: 'Active Recovery', completed: true });
+  };
+
+  const handleEndDayClick = () => {
+    setShowEndDayModal(true);
+    setCountdown(3);
+  };
+
+  const confirmEndDay = () => {
+    endDay();
+    setShowEndDayModal(false);
   };
 
   const TaskCard = ({
     title,
     icon: Icon,
     completed,
+    time,
     onClick,
     children,
   }: {
     title: string;
     icon: any;
     completed: boolean;
+    time?: string;
     onClick?: () => void;
     children?: React.ReactNode;
   }) => (
@@ -66,9 +98,16 @@ export default function Home() {
           >
             <Icon size={24} />
           </div>
-          <span className={cn("text-lg font-medium", completed ? "text-[#475569]" : "text-[#475569]/80")}>
-            {title}
-          </span>
+          <div className="flex flex-col">
+            <span className={cn("text-lg font-medium", completed ? "text-[#475569]" : "text-[#475569]/80")}>
+              {title}
+            </span>
+            {time && (
+              <span className="text-xs text-[#475569]/60 font-medium mt-0.5">
+                {time}
+              </span>
+            )}
+          </div>
         </div>
         <div
           className={cn(
@@ -95,6 +134,7 @@ export default function Home() {
           title="No Outside Food"
           icon={UtensilsCrossed}
           completed={tasks.noOutsideFood}
+          time={todayRecord.taskTimes?.noOutsideFood}
           onClick={() => toggleTask('noOutsideFood')}
         />
 
@@ -113,9 +153,16 @@ export default function Home() {
             >
               <Activity size={24} />
             </div>
-            <span className={cn("text-lg font-medium", tasks.activity.completed ? "text-[#475569]" : "text-[#475569]/80")}>
-              45 Min Activity
-            </span>
+            <div className="flex flex-col">
+              <span className={cn("text-lg font-medium", tasks.activity.completed ? "text-[#475569]" : "text-[#475569]/80")}>
+                45 Min Activity
+              </span>
+              {todayRecord.taskTimes?.activity && (
+                <span className="text-xs text-[#475569]/60 font-medium mt-0.5">
+                  {todayRecord.taskTimes.activity}
+                </span>
+              )}
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-2">
             {(['Walking', 'Workout', 'Swimming', 'Gym'] as ActivityType[]).map((type) => (
@@ -167,11 +214,18 @@ export default function Home() {
               >
                 <Droplets size={24} />
               </div>
-              <div>
+              <div className="flex flex-col">
                 <span className={cn("text-lg font-medium block", tasks.water === 3 ? "text-[#475569]" : "text-[#475569]/80")}>
                   3L Water
                 </span>
-                <span className="text-sm text-[#475569]/50">{tasks.water} / 3 Liters</span>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <span className="text-sm text-[#475569]/50">{tasks.water} / 3 Liters</span>
+                  {todayRecord.taskTimes?.water && (
+                    <span className="text-xs text-[#475569]/60 font-medium">
+                      • {todayRecord.taskTimes.water}
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
             <div className="flex gap-1">
@@ -192,27 +246,115 @@ export default function Home() {
           title="No Alcohol"
           icon={WineOff}
           completed={tasks.noAlcohol}
+          time={todayRecord.taskTimes?.noAlcohol}
           onClick={() => toggleTask('noAlcohol')}
         />
         <TaskCard
           title="Read 10 Pages"
           icon={BookOpen}
           completed={tasks.read10Pages}
+          time={todayRecord.taskTimes?.read10Pages}
           onClick={() => toggleTask('read10Pages')}
         />
         <TaskCard
           title="Progress Photo"
           icon={Camera}
           completed={tasks.progressPhoto}
+          time={todayRecord.taskTimes?.progressPhoto}
           onClick={() => toggleTask('progressPhoto')}
         />
         <TaskCard
           title="1 Job Referral"
           icon={Briefcase}
           completed={tasks.jobReferral}
+          time={todayRecord.taskTimes?.jobReferral}
           onClick={() => toggleTask('jobReferral')}
         />
       </div>
+
+      <div className="mt-8 mb-4">
+        <button
+          onClick={handleEndDayClick}
+          className="w-full py-4 bg-[#475569] hover:bg-[#334155] text-white rounded-2xl font-semibold text-lg transition-all shadow-md hover:shadow-lg active:scale-95"
+        >
+          End Day {currentDayNumber}
+        </button>
+      </div>
+
+      <AnimatePresence>
+        {showEndDayModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#475569]/20 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-sm bg-white/90 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/40 text-center"
+            >
+              <div className="w-16 h-16 bg-blue-100 text-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle size={32} />
+              </div>
+              <h2 className="text-2xl font-serif font-bold text-[#475569] mb-2">End Day {currentDayNumber}?</h2>
+              <p className="text-[#475569]/70 text-sm mb-6">
+                Are you sure you want to log today's progress and start the next day? You won't be able to edit today's tasks after this.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowEndDayModal(false)}
+                  className="flex-1 py-3 px-4 bg-[#F9F6F0] hover:bg-[#e8e4db] text-[#475569] rounded-xl font-medium transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmEndDay}
+                  disabled={countdown > 0}
+                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all shadow-md ${
+                    countdown > 0 
+                      ? 'bg-blue-300 text-white cursor-not-allowed' 
+                      : 'bg-blue-500 hover:bg-blue-600 text-white'
+                  }`}
+                >
+                  {countdown > 0 ? `Wait (${countdown}s)` : 'Confirm'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {showRecoveryWarning && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#475569]/20 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="w-full max-w-sm bg-white/90 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/40 text-center"
+            >
+              <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                ⚠️
+              </div>
+              <h2 className="text-2xl font-serif font-bold text-[#475569] mb-2">Soft Fail Warning</h2>
+              <p className="text-[#475569]/70 text-sm mb-8">
+                You haven't completed 6 consecutive workouts. Using Active Recovery today will result in a Soft Fail. Are you sure you want to proceed?
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowRecoveryWarning(false)}
+                  className="flex-1 py-3 px-4 bg-[#F9F6F0] hover:bg-[#e8e4db] text-[#475569] rounded-xl font-medium transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmActiveRecovery}
+                  className="flex-1 py-3 px-4 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium transition-all shadow-md"
+                >
+                  Proceed
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 }

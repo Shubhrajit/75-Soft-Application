@@ -1,36 +1,6 @@
 import { useState, useEffect } from 'react';
-import { startOfDay, differenceInDays, isSameDay, addDays } from 'date-fns';
-
-export type ActivityType = 'Walking' | 'Workout' | 'Swimming' | 'Gym' | 'Active Recovery' | null;
-export type FailReason = 'Time Management' | 'Energy' | 'Social Pressure' | 'Forgetfulness' | 'Other';
-
-export interface DailyTasks {
-  noOutsideFood: boolean;
-  activity: {
-    type: ActivityType;
-    completed: boolean;
-  };
-  water: number; // 0 to 3
-  noAlcohol: boolean;
-  read10Pages: boolean;
-  progressPhoto: boolean;
-  jobReferral: boolean;
-}
-
-export interface DailyRecord {
-  day: number;
-  date: string; // ISO string
-  tasks: DailyTasks;
-  isFailed: boolean;
-  failReason?: FailReason;
-}
-
-export interface AppState {
-  startDate: string | null;
-  records: Record<number, DailyRecord>;
-  profileName: string;
-  remindersEnabled: boolean;
-}
+import { startOfDay, differenceInDays, addDays } from 'date-fns';
+import { AppState, DailyTasks, FailReason, ActivityType } from '../types';
 
 const defaultTasks: DailyTasks = {
   noOutsideFood: false,
@@ -47,12 +17,18 @@ const initialState: AppState = {
   records: {},
   profileName: 'Challenger',
   remindersEnabled: true,
+  dayOffset: 0,
 };
 
 export function useAppStore() {
   const [state, setState] = useState<AppState>(() => {
-    const saved = localStorage.getItem('75soft-state');
-    return saved ? JSON.parse(saved) : initialState;
+    try {
+      const saved = localStorage.getItem('75soft-state');
+      return saved ? JSON.parse(saved) : initialState;
+    } catch (e) {
+      console.error('Failed to parse local storage data', e);
+      return initialState;
+    }
   });
 
   useEffect(() => {
@@ -65,6 +41,7 @@ export function useAppStore() {
       startDate: startOfDay(new Date()).toISOString(),
       profileName: state.profileName,
       remindersEnabled: state.remindersEnabled,
+      dayOffset: 0,
       records: {
         1: {
           day: 1,
@@ -77,6 +54,7 @@ export function useAppStore() {
   };
 
   const resetChallenge = () => {
+    localStorage.removeItem('75soft-state');
     setState({
       ...initialState,
       profileName: state.profileName,
@@ -89,8 +67,12 @@ export function useAppStore() {
   };
 
   const currentDayNumber = state.startDate
-    ? differenceInDays(startOfDay(new Date()), new Date(state.startDate)) + 1
+    ? differenceInDays(startOfDay(new Date()), new Date(state.startDate)) + 1 + (state.dayOffset || 0)
     : 0;
+
+  const endDay = () => {
+    setState((s) => ({ ...s, dayOffset: (s.dayOffset || 0) + 1 }));
+  };
 
   // Initialize missing days up to current day and check past days
   useEffect(() => {
@@ -151,9 +133,23 @@ export function useAppStore() {
   }, [currentDayNumber, state.startDate]);
 
   const updateTask = (day: number, taskKey: keyof DailyTasks, value: any) => {
+    const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setState((s) => {
       const record = s.records[day];
       if (!record) return s;
+
+      let isCompleted = false;
+      if (typeof value === 'boolean') isCompleted = value;
+      else if (taskKey === 'activity') isCompleted = value.completed;
+      else if (taskKey === 'water') isCompleted = value > 0;
+
+      const newTaskTimes = { ...(record.taskTimes || {}) };
+      if (isCompleted) {
+        newTaskTimes[taskKey] = now;
+      } else {
+        delete newTaskTimes[taskKey];
+      }
+
       return {
         ...s,
         records: {
@@ -164,6 +160,7 @@ export function useAppStore() {
               ...record.tasks,
               [taskKey]: value,
             },
+            taskTimes: newTaskTimes,
           },
         },
       };
@@ -241,5 +238,6 @@ export function useAppStore() {
     checkFailures,
     currentDayNumber,
     getConsecutiveWorkouts,
+    endDay,
   };
 }
