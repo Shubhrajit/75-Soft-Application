@@ -4,4 +4,19 @@
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Playfair Display", ui-serif, Georgia, serif;
+
+  --color-background: #FCFAF8;
+  --color-foreground: #1D1C1B;
+  --color-primary: #9CB4A1;
+  --color-primary-hover: #8AA38F;
+  --color-primary-foreground: #FFFFFF;
+  --color-secondary: #D5E8D7;
+  --color-secondary-foreground: #1B2D20;
+  --color-accent: #E8D5EB;
+  --color-accent-hover: #D8C5DB;
+  --color-accent-foreground: #4A2B4D;
+  --color-muted: #F2EFEA;
+  --color-muted-hover: #EAE4DE;
+  --color-muted-foreground: #4A4745;
+  --color-border: #CDC9C6;
 }

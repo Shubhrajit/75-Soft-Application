@@ -54,43 +54,43 @@ export default function Settings() {
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pb-10">
       <header className="mb-8 text-center pt-4">
-        <h1 className="text-3xl font-serif font-bold text-[#475569] mb-2">Settings</h1>
-        <p className="text-[#475569]/60 font-medium text-sm">Customize Your Experience</p>
+        <h1 className="text-3xl font-serif font-bold text-foreground mb-2">Settings</h1>
+        <p className="text-muted-foreground font-medium text-sm">Customize Your Experience</p>
       </header>
 
       <div className="space-y-4">
-        <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm">
+        <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] border border-white/60 shadow-sm">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#B2C8BA]/20 text-[#B2C8BA] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-secondary text-secondary-foreground flex items-center justify-center">
               <User size={24} />
             </div>
-            <h2 className="text-lg font-medium text-[#475569]">Profile</h2>
+            <h2 className="text-lg font-medium text-foreground">Profile</h2>
           </div>
           <div className="space-y-2">
-            <label className="text-sm text-[#475569]/60 font-medium">Name</label>
+            <label className="text-sm text-muted-foreground/80 font-medium">Name</label>
             <input
               type="text"
               value={state.profileName}
               onChange={handleNameChange}
-              className="w-full bg-[#F9F6F0] border border-white/40 rounded-xl px-4 py-3 text-[#475569] focus:outline-none focus:ring-2 focus:ring-[#B2C8BA]/50 transition-all"
+              className="w-full bg-muted border border-border/30 rounded-xl px-4 py-3 text-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all"
               placeholder="Your Name"
             />
           </div>
         </div>
 
-        <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm">
+        <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] border border-white/60 shadow-sm">
           <div className="flex items-center gap-4 mb-4">
-            <div className="w-12 h-12 rounded-2xl bg-[#D6CDEA]/30 text-[#D6CDEA] flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-accent text-accent-foreground flex items-center justify-center">
               <Bell size={24} />
             </div>
-            <h2 className="text-lg font-medium text-[#475569]">Notifications</h2>
+            <h2 className="text-lg font-medium text-foreground">Notifications</h2>
           </div>
           <div className="flex items-center justify-between">
-            <span className="text-[#475569]/80 font-medium">Daily Reminders</span>
+            <span className="text-muted-foreground font-medium">Daily Reminders</span>
             <button
               onClick={handleRemindersToggle}
               className={`w-12 h-6 rounded-full transition-colors relative ${
-                state.remindersEnabled ? 'bg-[#B2C8BA]' : 'bg-[#475569]/20'
+                state.remindersEnabled ? 'bg-primary' : 'bg-border'
               }`}
             >
               <div
@@ -100,22 +100,22 @@ export default function Settings() {
               />
             </button>
           </div>
-          <p className="text-xs text-[#475569]/50 mt-2">
+          <p className="text-xs text-muted-foreground/60 mt-2">
             (Mockup) Receive a gentle nudge to complete your daily tasks.
           </p>
         </div>
 
-        <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm space-y-4">
+        <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] border border-white/60 shadow-sm space-y-4">
           <button
             onClick={handleExport}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-[#F9F6F0] hover:bg-[#e8e4db] text-[#475569] rounded-xl font-medium transition-colors border border-white/40"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-muted hover:bg-muted-hover text-muted-foreground rounded-full font-medium transition-colors border border-border/30"
           >
             <Download size={20} />
             Export Data
           </button>
           <button
             onClick={handleResetClick}
-            className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl font-medium transition-colors border border-red-100"
+            className="w-full flex items-center justify-center gap-2 py-3 bg-red-50 hover:bg-red-100 text-red-500 rounded-full font-medium transition-colors border border-red-100"
           >
             <Trash2 size={20} />
             Reset Challenge
@@ -125,31 +125,31 @@ export default function Settings() {
 
       <AnimatePresence>
         {showResetModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#475569]/20 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-foreground/20 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="w-full max-w-sm bg-white/90 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/40 text-center"
+              className="w-full max-w-sm bg-white/90 backdrop-blur-xl p-8 rounded-[2rem] shadow-2xl border border-white/60 text-center"
             >
               <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle size={32} />
               </div>
-              <h2 className="text-2xl font-serif font-bold text-[#475569] mb-2">Reset Challenge?</h2>
-              <p className="text-[#475569]/70 text-sm mb-6">
+              <h2 className="text-2xl font-serif font-bold text-foreground mb-2">Reset Challenge?</h2>
+              <p className="text-muted-foreground text-sm mb-6">
                 This will permanently delete all your progress, history, and data. This action cannot be undone.
               </p>
               <div className="flex gap-3">
                 <button
                   onClick={() => setShowResetModal(false)}
-                  className="flex-1 py-3 px-4 bg-[#F9F6F0] hover:bg-[#e8e4db] text-[#475569] rounded-xl font-medium transition-all"
+                  className="flex-1 py-3 px-4 bg-muted hover:bg-muted-hover text-muted-foreground rounded-full font-medium transition-all"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={confirmReset}
                   disabled={countdown > 0}
-                  className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all shadow-md ${
+                  className={`flex-1 py-3 px-4 rounded-full font-medium transition-all shadow-md ${
                     countdown > 0 
                       ? 'bg-red-300 text-white cursor-not-allowed' 
                       : 'bg-red-500 hover:bg-red-600 text-white'

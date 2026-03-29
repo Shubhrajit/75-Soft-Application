@@ -37,30 +37,30 @@ export default function Dashboard() {
     value,
   }));
 
-  const COLORS = ['#B2C8BA', '#D6CDEA', '#F9F6F0', '#475569', '#A1B8A9'];
+  const COLORS = ['#9CB4A1', '#E8D5EB', '#F2EFEA', '#4A4745', '#8AA38F'];
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pb-10">
       <header className="mb-8 text-center pt-4">
-        <h1 className="text-3xl font-serif font-bold text-[#475569] mb-2">Dashboard</h1>
-        <p className="text-[#475569]/60 font-medium text-sm">Your Progress Overview</p>
+        <h1 className="text-3xl font-serif font-bold text-foreground mb-2">Dashboard</h1>
+        <p className="text-muted-foreground font-medium text-sm">Your Progress Overview</p>
       </header>
 
-      <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm mb-6">
-        <h2 className="text-lg font-medium text-[#475569]/80 mb-4">75-Day Journey</h2>
+      <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] border border-white/60 shadow-sm mb-6">
+        <h2 className="text-lg font-medium text-foreground mb-4">75-Day Journey</h2>
         <div className="grid grid-cols-10 gap-2">
           {Array.from({ length: 75 }).map((_, i) => {
             const day = i + 1;
             const record = state.records[day];
-            let statusClass = "bg-[#F9F6F0] border-[#475569]/10"; // Future
+            let statusClass = "bg-muted border-border/20"; // Future
             
             if (record) {
               if (record.isFailed) {
-                statusClass = "bg-[#D6CDEA] border-[#D6CDEA]/50"; // Failed
+                statusClass = "bg-accent border-accent/50"; // Failed
               } else if (day < currentDayNumber) {
-                statusClass = "bg-[#B2C8BA] border-[#B2C8BA]/50"; // Completed past
+                statusClass = "bg-primary border-primary/50"; // Completed past
               } else if (day === currentDayNumber) {
-                statusClass = percentage === 100 ? "bg-[#B2C8BA] border-[#B2C8BA]/50" : "bg-white border-[#B2C8BA] border-2"; // Today
+                statusClass = percentage === 100 ? "bg-primary border-primary/50" : "bg-white border-primary border-2"; // Today
               }
             }
 
@@ -76,16 +76,16 @@ export default function Dashboard() {
             );
           })}
         </div>
-        <div className="flex justify-center gap-4 mt-4 text-xs text-[#475569]/60">
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-[#B2C8BA]"></div> Pass</div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-[#D6CDEA]"></div> Fail</div>
-          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-[#F9F6F0] border"></div> Pending</div>
+        <div className="flex justify-center gap-4 mt-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-primary"></div> Pass</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-accent"></div> Fail</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-muted border border-border/30"></div> Pending</div>
         </div>
       </div>
 
       {chartData.length > 0 && (
-        <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm">
-          <h2 className="text-lg font-medium text-[#475569]/80 mb-4">Root Cause Analysis</h2>
+        <div className="bg-white/80 backdrop-blur-md p-6 rounded-[2rem] border border-white/60 shadow-sm">
+          <h2 className="text-lg font-medium text-foreground mb-4">Root Cause Analysis</h2>
           <div className="h-48 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -104,14 +104,14 @@ export default function Dashboard() {
                 </Pie>
                 <Tooltip
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-                  itemStyle={{ color: '#475569' }}
+                  itemStyle={{ color: '#1D1C1B' }}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
           <div className="flex flex-wrap justify-center gap-2 mt-2">
             {chartData.map((entry, index) => (
-              <div key={entry.name} className="flex items-center gap-1 text-xs text-[#475569]/80">
+              <div key={entry.name} className="flex items-center gap-1 text-xs text-muted-foreground">
                 <div className="w-2 h-2 rounded-full" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
                 {entry.name}
               </div>
