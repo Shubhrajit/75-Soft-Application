@@ -46,36 +46,6 @@ export default function Dashboard() {
         <p className="text-[#475569]/60 font-medium text-sm">Your Progress Overview</p>
       </header>
 
-      <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm mb-6 text-center">
-        <h2 className="text-lg font-medium text-[#475569]/80 mb-4">Today's Completion</h2>
-        <div className="relative w-40 h-40 mx-auto flex items-center justify-center">
-          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
-            <circle
-              className="text-[#F9F6F0] stroke-current"
-              strokeWidth="8"
-              cx="50"
-              cy="50"
-              r="40"
-              fill="transparent"
-            ></circle>
-            <circle
-              className="text-[#B2C8BA] stroke-current transition-all duration-1000 ease-out"
-              strokeWidth="8"
-              strokeLinecap="round"
-              cx="50"
-              cy="50"
-              r="40"
-              fill="transparent"
-              strokeDasharray="251.2"
-              strokeDashoffset={251.2 - (251.2 * percentage) / 100}
-            ></circle>
-          </svg>
-          <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-3xl font-bold text-[#475569]">{percentage}%</span>
-          </div>
-        </div>
-      </div>
-
       <div className="bg-white/60 backdrop-blur-md p-6 rounded-3xl border border-white/40 shadow-sm mb-6">
         <h2 className="text-lg font-medium text-[#475569]/80 mb-4">75-Day Journey</h2>
         <div className="grid grid-cols-10 gap-2">

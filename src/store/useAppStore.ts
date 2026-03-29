@@ -144,7 +144,22 @@ export function useAppStore() {
       else if (taskKey === 'water') isCompleted = value > 0;
 
       const newTaskTimes = { ...(record.taskTimes || {}) };
-      if (isCompleted) {
+      
+      if (taskKey === 'water') {
+        const oldWater = record.tasks.water;
+        const newWater = value;
+        if (newWater === 0) {
+          delete newTaskTimes.water;
+        } else if (newWater > oldWater) {
+          const existingTimes = newTaskTimes.water ? newTaskTimes.water.split(',') : [];
+          existingTimes.push(now);
+          newTaskTimes.water = existingTimes.join(',');
+        } else if (newWater < oldWater) {
+          const existingTimes = newTaskTimes.water ? newTaskTimes.water.split(',') : [];
+          existingTimes.pop();
+          newTaskTimes.water = existingTimes.join(',');
+        }
+      } else if (isCompleted) {
         newTaskTimes[taskKey] = now;
       } else {
         delete newTaskTimes[taskKey];

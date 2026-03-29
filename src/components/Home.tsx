@@ -26,6 +26,21 @@ export default function Home() {
   const consecutiveWorkouts = getConsecutiveWorkouts(currentDayNumber);
   const canActiveRecovery = consecutiveWorkouts >= 6;
 
+  const getCompletionPercentage = () => {
+    if (!tasks) return 0;
+    let completed = 0;
+    if (tasks.noOutsideFood) completed++;
+    if (tasks.activity.completed) completed++;
+    if (tasks.water === 3) completed++;
+    if (tasks.noAlcohol) completed++;
+    if (tasks.read10Pages) completed++;
+    if (tasks.progressPhoto) completed++;
+    if (tasks.jobReferral) completed++;
+    return Math.round((completed / 7) * 100);
+  };
+
+  const percentage = getCompletionPercentage();
+
   const toggleTask = (key: keyof typeof tasks) => {
     if (key === 'activity' || key === 'water') return;
     updateTask(currentDayNumber, key, !tasks[key]);
@@ -124,9 +139,39 @@ export default function Home() {
 
   return (
     <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="pb-10">
-      <header className="mb-8 text-center pt-4">
-        <h1 className="text-4xl font-serif font-bold text-[#B2C8BA] mb-2">Day {currentDayNumber}</h1>
-        <p className="text-[#475569]/60 font-medium uppercase tracking-widest text-sm">Of 75 Soft</p>
+      <header className="mb-8 flex items-center justify-between pt-4">
+        <div className="text-left">
+          <h1 className="text-4xl font-serif font-bold text-[#B2C8BA] mb-2">Day {currentDayNumber}</h1>
+          <p className="text-[#475569]/60 font-medium uppercase tracking-widest text-sm">Of 75 Soft</p>
+        </div>
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <svg className="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+            <circle
+              className="text-[#F9F6F0] stroke-current"
+              strokeWidth="8"
+              cx="50"
+              cy="50"
+              r="40"
+              fill="transparent"
+            ></circle>
+            <motion.circle
+              className="text-[#B2C8BA] stroke-current"
+              strokeWidth="8"
+              strokeLinecap="round"
+              cx="50"
+              cy="50"
+              r="40"
+              fill="transparent"
+              strokeDasharray="251.2"
+              initial={{ strokeDashoffset: 251.2 }}
+              animate={{ strokeDashoffset: 251.2 - (251.2 * percentage) / 100 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+            ></motion.circle>
+          </svg>
+          <div className="absolute inset-0 flex flex-col items-center justify-center">
+            <span className="text-sm font-bold text-[#475569]">{percentage}%</span>
+          </div>
+        </div>
       </header>
 
       <div className="space-y-4">
@@ -189,7 +234,6 @@ export default function Home() {
               )}
             >
               Active Recovery
-              {!canActiveRecovery && <span className="text-[10px] uppercase tracking-wider text-red-400">(Soft Fail if used)</span>}
             </button>
           </div>
         </div>
@@ -218,26 +262,31 @@ export default function Home() {
                 <span className={cn("text-lg font-medium block", tasks.water === 3 ? "text-[#475569]" : "text-[#475569]/80")}>
                   3L Water
                 </span>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-sm text-[#475569]/50">{tasks.water} / 3 Liters</span>
-                  {todayRecord.taskTimes?.water && (
-                    <span className="text-xs text-[#475569]/60 font-medium">
-                      • {todayRecord.taskTimes.water}
-                    </span>
+                <div className="flex flex-col gap-1 mt-1">
+                  {todayRecord.taskTimes?.water ? (
+                    todayRecord.taskTimes.water.split(',').map((time, idx) => (
+                      <span key={idx} className="text-xs text-[#475569]/60 font-medium">
+                        • {idx + 1}L at {time}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="text-sm text-[#475569]/50">0 / 3 Liters</span>
                   )}
                 </div>
               </div>
             </div>
-            <div className="flex gap-1">
-              {[1, 2, 3].map((drop) => (
-                <div
-                  key={drop}
-                  className={cn(
-                    "w-3 h-8 rounded-full transition-colors",
-                    tasks.water >= drop ? "bg-[#B2C8BA]" : "bg-[#475569]/10"
-                  )}
-                />
-              ))}
+            <div className="relative w-14 h-14 rounded-full border-2 border-[#B2C8BA]/30 bg-[#F9F6F0] overflow-hidden flex-shrink-0 shadow-inner">
+              <motion.div
+                className="absolute bottom-0 left-0 right-0 bg-[#B2C8BA]"
+                initial={{ height: "0%" }}
+                animate={{ height: `${(tasks.water / 3) * 100}%` }}
+                transition={{ duration: 0.8, type: "spring", bounce: 0.4 }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center z-10">
+                <span className={cn("font-bold text-sm", tasks.water > 1 ? "text-white" : "text-[#475569]")}>
+                  {tasks.water}/3L
+                </span>
+              </div>
             </div>
           </div>
         </motion.div>
