@@ -13,7 +13,7 @@ export default function Dashboard() {
   const percentage = getCompletionPercentage(currentDayNumber);
 
   const chartData = React.useMemo(() => {
-    const failReasonsCount = Object.values(state.records).reduce((acc, record: any) => {
+    const failReasonsCount = Object.values(state.records || {}).reduce((acc, record: any) => {
       if (record.isFailed && record.failReason) {
         acc[record.failReason] = (acc[record.failReason] || 0) + 1;
       }

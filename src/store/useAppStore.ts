@@ -28,7 +28,11 @@ export function useAppStore() {
   const [state, setState] = useState<AppState>(() => {
     try {
       const saved = localStorage.getItem('75soft-state');
-      return saved ? JSON.parse(saved) : initialState;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return { ...initialState, ...parsed };
+      }
+      return initialState;
     } catch (e) {
       console.error('Failed to parse local storage data', e);
       return initialState;
@@ -140,7 +144,7 @@ export function useAppStore() {
         1: {
           day: 1,
           date: startOfDay(new Date()).toISOString(),
-          tasks: { ...defaultTasks, additionalTasks: (additionalTasks || state.additionalTasksList).reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
+          tasks: { ...defaultTasks, additionalTasks: (additionalTasks || state.additionalTasksList || []).reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
           isFailed: false,
         },
       },
@@ -177,7 +181,7 @@ export function useAppStore() {
             1: {
               day: 1,
               date: startOfDay(new Date()).toISOString(),
-              tasks: { ...defaultTasks, additionalTasks: tasks.reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
+              tasks: { ...defaultTasks, additionalTasks: (tasks || []).reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
               isFailed: false,
             },
           },
@@ -229,7 +233,7 @@ export function useAppStore() {
           newRecords[i] = {
             day: i,
             date: addDays(new Date(s.startDate!), i - 1).toISOString(),
-            tasks: { ...defaultTasks, additionalTasks: s.additionalTasksList.reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
+            tasks: { ...defaultTasks, additionalTasks: (s.additionalTasksList || []).reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
             isFailed: i < currentDayNumber, // Past days are failed if not completed
           };
           updated = true;
