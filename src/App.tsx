@@ -1,33 +1,46 @@
+import { useState } from 'react';
 import { StoreProvider, useStore } from './context/StoreContext';
 import Home from './components/Home';
 import Dashboard from './components/Dashboard';
 import Settings from './components/Settings';
 import PostMortemModal from './components/PostMortemModal';
+import StartJourneyModal from './components/StartJourneyModal';
 import { Home as HomeIcon, LayoutDashboard, Settings as SettingsIcon } from 'lucide-react';
 import { cn } from './lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
 import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 
 function MainApp() {
-  const { state, startChallenge } = useStore();
+  const { state } = useStore();
   const navigate = useNavigate();
   const location = useLocation();
+  const [showStartModal, setShowStartModal] = useState(false);
 
-  if (!state.startDate) {
+  if (!state.startDate && location.pathname !== '/settings') {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-foreground font-sans">
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 text-foreground font-sans relative">
+        <button 
+          onClick={() => navigate('/settings')}
+          className="absolute top-6 right-6 p-2 text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <SettingsIcon size={24} />
+        </button>
         <div className="max-w-md w-full text-center space-y-8">
           <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ duration: 0.5 }}>
             <h1 className="text-5xl font-serif font-bold text-primary mb-4">75 Soft</h1>
             <p className="text-muted-foreground text-lg mb-8">A sustainable approach to building better habits.</p>
             <button
-              onClick={startChallenge}
+              onClick={() => setShowStartModal(true)}
               className="w-full py-4 bg-primary hover:bg-primary-hover text-white rounded-full font-semibold text-lg transition-all shadow-md hover:shadow-lg active:scale-95"
             >
               Start Journey
             </button>
           </motion.div>
         </div>
+        
+        {showStartModal && (
+          <StartJourneyModal isOpen={showStartModal} onClose={() => setShowStartModal(false)} />
+        )}
       </div>
     );
   }

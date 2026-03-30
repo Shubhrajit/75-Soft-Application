@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { startOfDay, differenceInDays, addDays } from 'date-fns';
+import { get, set, del } from 'idb-keyval';
 import { AppState, DailyTasks, FailReason, ActivityType } from '../types';
 
 const defaultTasks: DailyTasks = {
@@ -8,8 +9,7 @@ const defaultTasks: DailyTasks = {
   water: 0,
   noAlcohol: false,
   read10Pages: false,
-  progressPhoto: false,
-  jobReferral: false,
+  additionalTasks: {},
 };
 
 const initialState: AppState = {
@@ -18,9 +18,13 @@ const initialState: AppState = {
   profileName: 'Challenger',
   remindersEnabled: true,
   dayOffset: 0,
+  additionalTasksList: [],
 };
 
 export function useAppStore() {
+  const [fileHandle, setFileHandle] = useState<any>(null);
+  const [folderName, setFolderName] = useState<string | null>(null);
+
   const [state, setState] = useState<AppState>(() => {
     try {
       const saved = localStorage.getItem('75soft-state');
@@ -32,38 +36,176 @@ export function useAppStore() {
   });
 
   useEffect(() => {
-    localStorage.setItem('75soft-state', JSON.stringify(state));
-  }, [state]);
+    const loadHandle = async () => {
+      try {
+        const handle = await get('75soft-file-handle');
+        if (handle) {
+          // @ts-ignore
+          if (await handle.queryPermission({ mode: 'readwrite' }) === 'granted') {
+            setFileHandle(handle);
+            setFolderName(handle.name);
+          } else {
+            // We have the handle but lack permission. We can't request it without a user gesture.
+            // For now, we'll keep it in state, but writing might fail or prompt.
+            setFileHandle(handle);
+            setFolderName(handle.name);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load file handle from IDB', err);
+      }
+    };
+    loadHandle();
+  }, []);
 
-  const startChallenge = () => {
+  useEffect(() => {
+    try {
+      localStorage.setItem('75soft-state', JSON.stringify(state));
+    } catch (e) {
+      console.error('Failed to save state to local storage', e);
+    }
+
+    if (fileHandle) {
+      const saveToFile = async () => {
+        try {
+          // @ts-ignore
+          if (await fileHandle.queryPermission({ mode: 'readwrite' }) !== 'granted') {
+            // @ts-ignore
+            await fileHandle.requestPermission({ mode: 'readwrite' });
+          }
+          const writable = await fileHandle.createWritable();
+          await writable.write(JSON.stringify(state, null, 2));
+          await writable.close();
+        } catch (err) {
+          console.error('Failed to write to file handle', err);
+        }
+      };
+      saveToFile();
+    }
+  }, [state, fileHandle]);
+
+  const chooseStorageFolder = async () => {
+    try {
+      if (!('showSaveFilePicker' in window)) {
+        alert('File selection is not supported in this browser. Using default storage.');
+        return false;
+      }
+      // @ts-ignore
+      const handle = await window.showSaveFilePicker({
+        suggestedName: '75soft-data.json',
+        types: [{
+          description: 'JSON File',
+          accept: { 'application/json': ['.json'] },
+        }],
+      });
+      
+      try {
+        const file = await handle.getFile();
+        const text = await file.text();
+        if (text) {
+          const data = JSON.parse(text);
+          if (data && data.records) {
+            setState(data);
+          }
+        }
+      } catch (e) {
+        console.log('Starting fresh in this file.');
+      }
+
+      setFileHandle(handle);
+      setFolderName(handle.name);
+      await set('75soft-file-handle', handle);
+      return handle.name;
+    } catch (err) {
+      console.error('User cancelled or failed to open file picker', err);
+      return false;
+    }
+  };
+
+  const clearStorageFolder = async () => {
+    setFileHandle(null);
+    setFolderName(null);
+    await del('75soft-file-handle');
+  };
+
+  const startChallenge = (profileName?: string, additionalTasks?: string[]) => {
     setState({
       ...initialState,
       startDate: startOfDay(new Date()).toISOString(),
-      profileName: state.profileName,
+      profileName: profileName || state.profileName,
       remindersEnabled: state.remindersEnabled,
       dayOffset: 0,
+      additionalTasksList: additionalTasks || state.additionalTasksList,
       records: {
         1: {
           day: 1,
           date: startOfDay(new Date()).toISOString(),
-          tasks: { ...defaultTasks },
+          tasks: { ...defaultTasks, additionalTasks: (additionalTasks || state.additionalTasksList).reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
           isFailed: false,
         },
       },
     });
   };
 
-  const resetChallenge = () => {
+  const resetChallenge = async () => {
     localStorage.removeItem('75soft-state');
     setState({
       ...initialState,
       profileName: state.profileName,
       remindersEnabled: state.remindersEnabled,
     });
+    setFileHandle(null);
+    setFolderName(null);
+    await del('75soft-file-handle');
   };
 
   const updateProfile = (name: string, reminders: boolean) => {
     setState((s) => ({ ...s, profileName: name, remindersEnabled: reminders }));
+  };
+
+  const updateAdditionalTasksList = (tasks: string[], restart: boolean = false) => {
+    setState((s) => {
+      if (restart) {
+        return {
+          ...initialState,
+          startDate: startOfDay(new Date()).toISOString(),
+          profileName: s.profileName,
+          remindersEnabled: s.remindersEnabled,
+          dayOffset: 0,
+          additionalTasksList: tasks,
+          records: {
+            1: {
+              day: 1,
+              date: startOfDay(new Date()).toISOString(),
+              tasks: { ...defaultTasks, additionalTasks: tasks.reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
+              isFailed: false,
+            },
+          },
+        };
+      } else {
+        // Just update the list, and add to current day's tasks if not present
+        const newRecords = { ...s.records };
+        const currentDay = currentDayNumber;
+        if (currentDay > 0 && newRecords[currentDay]) {
+          const currentTasks = newRecords[currentDay].tasks.additionalTasks || {};
+          const updatedTasks: Record<string, boolean> = {};
+          
+          // Only keep tasks that are in the new list
+          tasks.forEach(t => {
+            updatedTasks[t] = currentTasks[t] || false;
+          });
+          
+          newRecords[currentDay] = {
+            ...newRecords[currentDay],
+            tasks: {
+              ...newRecords[currentDay].tasks,
+              additionalTasks: updatedTasks,
+            }
+          };
+        }
+        return { ...s, additionalTasksList: tasks, records: newRecords };
+      }
+    });
   };
 
   const currentDayNumber = state.startDate
@@ -87,7 +229,7 @@ export function useAppStore() {
           newRecords[i] = {
             day: i,
             date: addDays(new Date(s.startDate!), i - 1).toISOString(),
-            tasks: { ...defaultTasks },
+            tasks: { ...defaultTasks, additionalTasks: s.additionalTasksList.reduce((acc, t) => ({ ...acc, [t]: false }), {}) },
             isFailed: i < currentDayNumber, // Past days are failed if not completed
           };
           updated = true;
@@ -99,9 +241,17 @@ export function useAppStore() {
             record.tasks.activity.completed &&
             record.tasks.water === 3 &&
             record.tasks.noAlcohol &&
-            record.tasks.read10Pages &&
-            record.tasks.progressPhoto &&
-            record.tasks.jobReferral;
+            record.tasks.read10Pages;
+
+          if (record.tasks.additionalTasks) {
+            const additionalKeys = Object.keys(record.tasks.additionalTasks);
+            for (const key of additionalKeys) {
+              if (!record.tasks.additionalTasks[key]) {
+                isCompleted = false;
+                break;
+              }
+            }
+          }
 
           if (isCompleted && record.tasks.activity.type === 'Active Recovery') {
             let consecutiveWorkouts = 0;
@@ -132,7 +282,7 @@ export function useAppStore() {
     });
   }, [currentDayNumber, state.startDate]);
 
-  const updateTask = (day: number, taskKey: keyof DailyTasks, value: any) => {
+  const updateTask = (day: number, taskKey: keyof DailyTasks | string, value: any) => {
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     setState((s) => {
       const record = s.records[day];
@@ -160,9 +310,29 @@ export function useAppStore() {
           newTaskTimes.water = existingTimes.join(',');
         }
       } else if (isCompleted) {
-        newTaskTimes[taskKey] = now;
+        newTaskTimes[taskKey as string] = now;
       } else {
-        delete newTaskTimes[taskKey];
+        delete newTaskTimes[taskKey as string];
+      }
+
+      if (s.additionalTasksList.includes(taskKey as string)) {
+        return {
+          ...s,
+          records: {
+            ...s.records,
+            [day]: {
+              ...record,
+              tasks: {
+                ...record.tasks,
+                additionalTasks: {
+                  ...(record.tasks.additionalTasks || {}),
+                  [taskKey as string]: value,
+                }
+              },
+              taskTimes: newTaskTimes,
+            },
+          },
+        };
       }
 
       return {
@@ -173,7 +343,7 @@ export function useAppStore() {
             ...record,
             tasks: {
               ...record.tasks,
-              [taskKey]: value,
+              [taskKey as keyof DailyTasks]: value,
             },
             taskTimes: newTaskTimes,
           },
@@ -211,9 +381,17 @@ export function useAppStore() {
           record.tasks.activity.completed &&
           record.tasks.water === 3 &&
           record.tasks.noAlcohol &&
-          record.tasks.read10Pages &&
-          record.tasks.progressPhoto &&
-          record.tasks.jobReferral;
+          record.tasks.read10Pages;
+
+        if (record.tasks.additionalTasks) {
+          const additionalKeys = Object.keys(record.tasks.additionalTasks);
+          for (const key of additionalKeys) {
+            if (!record.tasks.additionalTasks[key]) {
+              isCompleted = false;
+              break;
+            }
+          }
+        }
 
         if (isCompleted && record.tasks.activity.type === 'Active Recovery') {
           const consecutiveWorkouts = getConsecutiveWorkouts(i);
@@ -243,16 +421,44 @@ export function useAppStore() {
     return count;
   };
 
+  const getCompletionPercentage = (day: number) => {
+    const record = state.records[day];
+    if (!record || !record.tasks) return 0;
+    const tasks = record.tasks;
+    let completed = 0;
+    let total = 5;
+    if (tasks.noOutsideFood) completed++;
+    if (tasks.activity.completed) completed++;
+    if (tasks.water === 3) completed++;
+    if (tasks.noAlcohol) completed++;
+    if (tasks.read10Pages) completed++;
+    
+    if (tasks.additionalTasks) {
+      const additionalKeys = Object.keys(tasks.additionalTasks);
+      total += additionalKeys.length;
+      additionalKeys.forEach(key => {
+        if (tasks.additionalTasks![key]) completed++;
+      });
+    }
+    
+    return Math.round((completed / total) * 100);
+  };
+
   return {
     state,
+    folderName,
+    chooseStorageFolder,
+    clearStorageFolder,
     startChallenge,
     resetChallenge,
     updateProfile,
+    updateAdditionalTasksList,
     updateTask,
     submitFailReason,
     checkFailures,
     currentDayNumber,
     getConsecutiveWorkouts,
+    getCompletionPercentage,
     endDay,
   };
 }

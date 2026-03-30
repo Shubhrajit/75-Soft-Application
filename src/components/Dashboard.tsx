@@ -1,41 +1,30 @@
+import React from 'react';
 import { useStore } from '../context/StoreContext';
 import { motion } from 'motion/react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 import { cn } from '../lib/utils';
 
 export default function Dashboard() {
-  const { state, currentDayNumber } = useStore();
+  const { state, currentDayNumber, getCompletionPercentage } = useStore();
 
   const todayRecord = state.records[currentDayNumber];
   const tasks = todayRecord?.tasks;
 
-  const getCompletionPercentage = () => {
-    if (!tasks) return 0;
-    let completed = 0;
-    if (tasks.noOutsideFood) completed++;
-    if (tasks.activity.completed) completed++;
-    if (tasks.water === 3) completed++;
-    if (tasks.noAlcohol) completed++;
-    if (tasks.read10Pages) completed++;
-    if (tasks.progressPhoto) completed++;
-    if (tasks.jobReferral) completed++;
-    return Math.round((completed / 7) * 100);
-  };
+  const percentage = getCompletionPercentage(currentDayNumber);
 
-  const percentage = getCompletionPercentage();
+  const chartData = React.useMemo(() => {
+    const failReasonsCount = Object.values(state.records).reduce((acc, record: any) => {
+      if (record.isFailed && record.failReason) {
+        acc[record.failReason] = (acc[record.failReason] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
 
-  // Calculate fail reasons
-  const failReasonsCount = Object.values(state.records).reduce((acc, record: any) => {
-    if (record.isFailed && record.failReason) {
-      acc[record.failReason] = (acc[record.failReason] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
-
-  const chartData = Object.entries(failReasonsCount).map(([name, value]) => ({
-    name,
-    value,
-  }));
+    return Object.entries(failReasonsCount).map(([name, value]) => ({
+      name,
+      value,
+    }));
+  }, [state.records]);
 
   const COLORS = ['#9CB4A1', '#E8D5EB', '#F2EFEA', '#4A4745', '#8AA38F'];
 

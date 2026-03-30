@@ -10,8 +10,7 @@ export interface DailyTasks {
   water: number; // 0 to 3
   noAlcohol: boolean;
   read10Pages: boolean;
-  progressPhoto: boolean;
-  jobReferral: boolean;
+  additionalTasks?: Record<string, boolean>;
 }
 
 export interface DailyRecord {
@@ -29,4 +28,5 @@ export interface AppState {
   profileName: string;
   remindersEnabled: boolean;
   dayOffset: number;
+  additionalTasksList: string[];
 }
